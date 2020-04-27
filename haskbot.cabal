@@ -1,0 +1,91 @@
+cabal-version:       2.4
+-- cabal 3.0 is not supported by Stack yet
+-- see: https://github.com/haskell/haskell-ide-engine/issues/1564
+
+name:                haskbot
+version:             0.1.0.0
+synopsis:            Telegram bot for Haskellers
+description:         Telegram bot for Haskellers
+-- bug-reports:
+license:             MIT
+license-file:        LICENSE
+author:              Vasiliy Yorkin
+maintainer:          vasiliy.yorkin@gmail.com
+copyright:           2020 Vasiliy Yorkin
+-- category:
+build-type:          Simple
+extra-source-files:  README.md
+                   , CHANGELOG.md
+tested-with:         GHC == 8.8.3
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Haskbot
+  build-depends:       base ^>= 4.13
+
+                     , text ^>= 1.2
+                     , utf8-string ^>= 1.0
+                     , bytestring ^>= 0.10
+                     
+                     , hint ^>= 0.9
+                     
+                     , containers ^>= 0.6
+                     , transformers ^>= 0.5
+                     , mtl ^>= 2.2
+
+  ghc-options:         -Wall
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wcompat
+                       -Widentities
+                       -Wredundant-constraints
+                       -fhide-source-paths
+                       -Wpartial-fields
+
+  default-language:    Haskell2010
+  default-extensions:  ConstraintKinds
+                       DeriveGeneric
+                       GeneralizedNewtypeDeriving
+                       InstanceSigs
+                       KindSignatures
+                       LambdaCase
+                       OverloadedStrings
+                       RecordWildCards
+                       ScopedTypeVariables
+                       StandaloneDeriving
+                       TupleSections
+                       TypeApplications
+                       ViewPatterns
+                       NoStarIsType
+
+executable haskbot
+  hs-source-dirs:      app
+  main-is:             Main.hs
+  build-depends:       base
+                     , haskbot
+  ghc-options:         -Wall
+                       -threaded
+                       -rtsopts
+                       -with-rtsopts=-N
+                       -Wincomplete-uni-patterns
+                       -Wincomplete-record-updates
+                       -Wcompat
+                       -Widentities
+                       -Wredundant-constraints
+                       -fhide-source-paths
+                       -Wpartial-fields
+
+  default-language:    Haskell2010
+  default-extensions:  ConstraintKinds
+                       DeriveGeneric
+                       GeneralizedNewtypeDeriving
+                       InstanceSigs
+                       KindSignatures
+                       LambdaCase
+                       OverloadedStrings
+                       RecordWildCards
+                       ScopedTypeVariables
+                       StandaloneDeriving
+                       TupleSections
+                       TypeApplications
+                       ViewPatterns

@@ -1,0 +1,7 @@
+resolver: lts-15.3
+
+nix:
+  enable: true
+
+ghc-options:
+  "$locals": -fhide-source-paths
