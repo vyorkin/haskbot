@@ -16,7 +16,7 @@ copyright:           2020 Vasiliy Yorkin
 build-type:          Simple
 extra-source-files:  README.md
                    , CHANGELOG.md
-tested-with:         GHC == 8.8.3
+tested-with:         GHC == 8.8.2
 
 library
   hs-source-dirs:      src

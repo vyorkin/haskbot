@@ -1,25 +1,29 @@
+GHC_OPTIONS := --ghc-options='-ferror-spans -fhide-source-paths' # -fprint-unicode-syntax
 
-dev:
-	stack build --test --no-run-tests
-	ghcid --command="cabal repl" | source-highlight -s haskell -f esc
+dev: all
+	ghcid --command="cabal new-repl $(GHC_OPTIONS)" | source-highlight -s haskell -f esc
 repl:
-	cabal repl
-build:
-	cabal build
+	cabal new-repl $(GHC_OPTIONS)
+
+all:
+	cabal new-build $(GHC_OPTIONS) all
 clean:
-	cabal clean
+	cabal new-clean
 check:
-	cabal check
+	cabal new-check
+test:
+	cabal new-test
+docs:
+	cabal new-haddock
 tags:
-	rm -f tags TAGS ctags codex.tags
-	# see: https://github.com/aloiscochard/codex/issues/86
-	mv .stack-work .stack-work-bak
+	rm -f tags codex.tags
 	codex update --force
-	mv .stack-work-bak .stack-work
 	haskdogs --hasktags-args "-b"
 prof:
-	cabal configure --enable-profiling
+	cabal new-configure --enable-profiling
 noprof:
-	cabal configure --disable-profiling
+	cabal new-configure --disable-profiling
+hoogle:
+	hoogle server --local
 
-.PHONY: dev repl build clean check tags prof noprof
+.PHONY: dev repl clean all check test docs tags prof noprof hoogle
