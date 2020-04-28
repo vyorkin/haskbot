@@ -1,3 +1,5 @@
+config.toml
+
 ### Haskell
 dist
 dist-*
@@ -23,6 +25,12 @@ cabal.project.local
 .HTF/
 # Stack
 .stack-work/
+
+# Cabal
+.cabal
+
+# Vendor
+/vendor
 
 ### IDE/support
 # Vim

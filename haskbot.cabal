@@ -16,19 +16,35 @@ copyright:           2020 Vasiliy Yorkin
 build-type:          Simple
 extra-source-files:  README.md
                    , CHANGELOG.md
-tested-with:         GHC == 8.8.2
+tested-with:         GHC == 8.8.3
 
 library
   hs-source-dirs:      src
   exposed-modules:     Haskbot
+                       Haskbot.Bot
+                       Haskbot.Config
+                       Haskbot.Data
+
   build-depends:       base ^>= 4.13
 
                      , text ^>= 1.2
                      , utf8-string ^>= 1.0
                      , bytestring ^>= 0.10
-                     
+                     , tomland ^>= 1.2
+
                      , hint ^>= 0.9
-                     
+                     , http-client ^>= 0.6
+                     , http-client-tls ^>= 0.3
+                     , servant ^>= 0.17
+                     , servant-client ^>= 0.17
+                     , telegram-bot-simple ^>= 0.3
+
+                     , containers ^>= 0.6
+                     , transformers ^>= 0.5
+                     , mtl ^>= 2.2
+
+                     , telegram-bot-simple ^>= 0.3
+
                      , containers ^>= 0.6
                      , transformers ^>= 0.5
                      , mtl ^>= 2.2

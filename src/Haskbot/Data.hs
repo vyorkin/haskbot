@@ -1,0 +1,1 @@
+module Haskbot.Data () where

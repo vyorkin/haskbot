@@ -1,0 +1,5 @@
+bot.token = "your-telegram-bot-token"
+
+[proxy]
+  host = "185.157.161.245"
+  port = 8118
