@@ -9,7 +9,10 @@ module Haskbot.Bot
   , run
   ) where
 
+import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.Catch (MonadMask)
 import Data.Text (Text)
+import qualified Data.Text as Text
 import Network.HTTP.Client (newManager, noProxy, useProxy, managerSetProxy)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Servant.Client (ClientEnv(..), mkClientEnv)
@@ -17,8 +20,11 @@ import qualified Telegram.Bot.API as Telegram
 import Telegram.Bot.API (botBaseUrl)
 import Telegram.Bot.Simple (BotApp(..), Eff, startBot_, (<#), replyText)
 import Telegram.Bot.Simple.Debug (traceBotDefault)
+import Telegram.Bot.Simple.UpdateParser (parseUpdate, text)
 
 import Haskbot.Config (Config(..))
+import Haskbot.Interpreter (defaultOptions)
+import qualified Haskbot.Interpreter as Interpreter
 
 -- | Bot conversation state model.
 data Model = Model
@@ -27,7 +33,7 @@ data Model = Model
 -- | Actions bot can perform.
 data Action
   = NoAction   -- ^ Perform no action.
-  | Reply Text -- ^ Reply some text.
+  | Eval Text -- ^ Reply some text.
   deriving (Show)
 
 -- | Bot application.
@@ -41,17 +47,19 @@ bot = BotApp
 
 -- | Processes incoming 'Telegram.Update's and turns them into 'Action's.
 handleUpdate :: Model -> Telegram.Update -> Maybe Action
-handleUpdate _ _ = Just (Reply "Got it")
+handleUpdate _ = parseUpdate
+  (Eval <$> text)
 
--- | Hot to handle 'Action's.
+-- | How to handle 'Action's.
 handleAction :: Action -> Model -> Eff Action Model
 handleAction action model = case action of
   NoAction -> pure model
-  Reply msg -> model <# do
-    replyText msg
+  Eval msg -> model <# do
+    res <- liftIO $ Interpreter.run' defaultOptions msg
+    replyText res
     pure NoAction
 
--- | Creates a
+-- | Creates a new 'ClientEnv' using a given 'Config'.
 newClientEnv :: Config -> IO ClientEnv
 newClientEnv Config{..} = do
   let proxy = maybe noProxy useProxy configProxy

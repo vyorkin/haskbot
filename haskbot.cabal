@@ -24,12 +24,20 @@ library
                        Haskbot.Bot
                        Haskbot.Config
                        Haskbot.Data
+                       Haskbot.Resources
+                       Haskbot.Interpreter
+                         Haskbot.Interpreter.Error
+                         Haskbot.Interpreter.Context
+                         Haskbot.Interpreter.Options
 
   build-depends:       base ^>= 4.13
 
                      , text ^>= 1.2
                      , utf8-string ^>= 1.0
                      , bytestring ^>= 0.10
+                     , unix >= 2.7
+                     , exceptions ^>= 0.10
+
                      , tomland ^>= 1.2
 
                      , hint ^>= 0.9
@@ -37,11 +45,6 @@ library
                      , http-client-tls ^>= 0.3
                      , servant ^>= 0.17
                      , servant-client ^>= 0.17
-                     , telegram-bot-simple ^>= 0.3
-
-                     , containers ^>= 0.6
-                     , transformers ^>= 0.5
-                     , mtl ^>= 2.2
 
                      , telegram-bot-simple ^>= 0.3
 
