@@ -13,7 +13,7 @@ I’m still a Haskell beginner, so I may do things wrong.
 
 I hope you won’t try to build it locally, but anyway…
 
-Run these commands the project root directory:
+Run these commands in the project root directory:
 
 
 ```sh
