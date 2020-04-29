@@ -50,11 +50,11 @@ done :: Applicative f => f Action
 done = pure Done
 
 -- | Makes a bot application.
-mkBot :: Options -> BotApp Model Action
-mkBot opts = BotApp
+mkBot :: Config -> Options -> BotApp Model Action
+mkBot cfg opts = BotApp
   { botInitialModel = emptyModel
   , botAction = flip updateToAction
-  , botHandler = mkActionHandler opts
+  , botHandler = mkActionHandler cfg opts
   , botJobs = []
   }
 
@@ -79,8 +79,8 @@ updateToAction _ = parseUpdate $
   <|> Interpreter . Eval   <$> command "e"
 
 -- | Creates a new 'Action' handler.
-mkActionHandler :: Options -> Action -> Model -> Eff Action Model
-mkActionHandler opts action model = case action of
+mkActionHandler :: Config -> Options -> Action -> Model -> Eff Action Model
+mkActionHandler Config{..} opts action model = case action of
   Done ->
     pure model
   Help ->
@@ -89,12 +89,15 @@ mkActionHandler opts action model = case action of
     -- TODO
     model <# (replyText "Not implemented yet" >> done)
   Interpreter cmd -> model <# do
-    res <- wrapCode <$> interpret cmd
-    replyMarkdown res
+    res <- interpret cmd
+    replyCode configOutputLimit res
     done
   where
     interpret :: Command -> BotM Text
     interpret = liftIO . Interpreter.run opts
+
+replyCode :: Int -> Text -> BotM ()
+replyCode n s = replyMarkdown $ wrapCode (Text.take n s)
 
 replyMarkdown :: Text -> BotM ()
 replyMarkdown s = reply (toReplyMessage s)
@@ -114,5 +117,5 @@ newClientEnv Config{..} = do
 run :: Config -> Options -> IO ()
 run cfg opts = do
   env <- newClientEnv cfg
-  let bot = mkBot opts
+  let bot = mkBot cfg opts
   startBot_ (traceBotDefault bot) env

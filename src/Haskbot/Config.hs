@@ -19,7 +19,11 @@ import Network.HTTP.Client (Proxy(..))
 -- | Bot configuration.
 data Config = Config
   { configBotToken :: !Telegram.Token
+    -- ^ Telegram bot authentication token.
   , configProxy :: !(Maybe Proxy)
+    -- ^ Proxy settings.
+  , configOutputLimit :: !Int
+    -- ^ Haskell interpreter settings.
   , configInterpreter :: !Interpreter
   }
 
@@ -37,6 +41,7 @@ configCodec =
   Config
     <$> Toml.diwrap (Toml.text "bot.token") .= configBotToken
     <*> Toml.dioptional (Toml.table proxyCodec "proxy") .= configProxy
+    <*> Toml.int "output.limit" .= configOutputLimit
     <*> Toml.table interpreterCodec "interpreter" .= configInterpreter
 
 proxyCodec :: TomlCodec Proxy
