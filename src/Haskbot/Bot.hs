@@ -62,7 +62,7 @@ usage :: Text
 usage = Text.unlines
   [ "Usage:"
   , ""
-  , "* expr - Evalute <expr>"
+  , "* /e expr - Evalute <expr>"
   , "* /t expr - Get <expr> type"
   , "* /k Type - Get <Type> kind"
   , "* /h Type - Search <Type> in Hoogle"
@@ -75,7 +75,7 @@ updateToAction _ = parseUpdate $
       Help <$ command "h"
   <|> Interpreter . TypeOf <$> command "t"
   <|> Interpreter . KindOf <$> command "k"
-  <|> Interpreter . Eval   <$> plainText
+  <|> Interpreter . Eval   <$> command "e"
 
 -- | Creates a new 'Action' handler.
 mkActionHandler :: Options -> Action -> Model -> Eff Action Model
@@ -100,7 +100,7 @@ replyMarkdown s = reply (toReplyMessage s)
   { replyMessageParseMode = Just ParseMode.Markdown }
 
 wrapCode :: Text -> Text
-wrapCode s = let q = "```" in q <> s <> q
+wrapCode s = "```\n" <> s <> "\n```"
 
 -- | Creates a new 'ClientEnv' using a given 'Config'.
 newClientEnv :: Config -> IO ClientEnv
