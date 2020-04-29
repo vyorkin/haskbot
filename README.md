@@ -1,5 +1,5 @@
 [![MIT license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Build status](https://secure.travis-ci.org/vyorkin/haleidoscope.svg)](https://travis-ci.org/vyorkin/haleidoscope)
+[![Build Status](https://travis-ci.com/vyorkin/haskbot.svg?token=nu1z24pQGqA71eE3ivzP&branch=master)](https://travis-ci.com/vyorkin/haskbot)
 
 # Haskbot
 
