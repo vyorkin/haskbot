@@ -18,7 +18,7 @@ Run these commands in the project root directory:
 ```sh
 echo "optional-packages: vendor/**/*.cabal" > cabal.project.local
 mkdir vendor
-git clone --single-branch --branch add-monad-fail-inst git@github.com:vyorkin/telegram-bot-simple.git vendor/
+git clone --single-branch --branch add-monad-fail-inst https://github.com/vyorkin/telegram-bot-simple.git vendor/
 make all
 ```
 
@@ -34,3 +34,5 @@ cp config.example.toml config.toml
 ```
 
 Edit the `config.toml` to set your bot token.
+
+Now you can run your bot (hopefully).
