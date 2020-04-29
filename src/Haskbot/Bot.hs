@@ -10,6 +10,7 @@ module Haskbot.Bot
   ) where
 
 import Data.Text (Text)
+import qualified Data.Text as Text
 import Control.Monad.IO.Class (liftIO)
 import Control.Applicative ((<|>))
 import Network.HTTP.Client (newManager, noProxy, useProxy, managerSetProxy)
@@ -17,9 +18,10 @@ import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Servant.Client (ClientEnv(..), mkClientEnv)
 import qualified Telegram.Bot.API as Telegram
 import Telegram.Bot.API (botBaseUrl)
-import Telegram.Bot.Simple (BotApp(..), Eff, BotM, startBot_, (<#), replyText)
+import Telegram.Bot.Simple (BotApp(..), Eff, BotM, ReplyMessage(..), startBot_, (<#), replyText, reply, toReplyMessage)
 import Telegram.Bot.Simple.Debug (traceBotDefault)
-import Telegram.Bot.Simple.UpdateParser (parseUpdate, plainText, command, callbackQueryDataRead)
+import Telegram.Bot.Simple.UpdateParser (parseUpdate, plainText, command)
+import qualified Telegram.Bot.API.Methods as ParseMode
 
 import Haskbot.Config (Config(..))
 import Haskbot.Interpreter (Options(..), Command(..))
@@ -35,6 +37,10 @@ emptyModel = Model
 data Action
   -- | Perform no action.
   = Done
+  -- | Display a help text with usage info.
+  | Help
+  -- | Search in Hoogle.
+  | Hoogle Text
   -- | Run interpreter command.
   | Interpreter Command
   deriving (Show, Read)
@@ -52,22 +58,49 @@ mkBot opts = BotApp
   , botJobs = []
   }
 
+usage :: Text
+usage = Text.unlines
+  [ "Usage:"
+  , ""
+  , "* expr - Evalute <expr>"
+  , "* /t expr - Get <expr> type"
+  , "* /k Type - Get <Type> kind"
+  , "* /h Type - Search <Type> in Hoogle"
+  , "* /help - Display this message"
+  ]
+
 -- | Processes incoming 'Telegram.Update's and turns them into 'Action's.
 updateToAction :: Model -> Telegram.Update -> Maybe Action
 updateToAction _ = parseUpdate $
-      Interpreter . TypeOf <$> command "t"
+      Help <$ command "h"
+  <|> Interpreter . TypeOf <$> command "t"
   <|> Interpreter . KindOf <$> command "k"
   <|> Interpreter . Eval   <$> plainText
-  <|> callbackQueryDataRead
 
 -- | Creates a new 'Action' handler.
 mkActionHandler :: Options -> Action -> Model -> Eff Action Model
 mkActionHandler opts action model = case action of
-  Done -> pure model
-  Interpreter cmd -> model <# (interpret cmd >>= replyText >> done)
+  Done ->
+    pure model
+  Help ->
+    model <# (replyText usage >> done)
+  Hoogle _ ->
+    -- TODO
+    model <# (replyText "Not implemented yet" >> done)
+  Interpreter cmd -> model <# do
+    res <- wrapCode <$> interpret cmd
+    replyMarkdown res
+    done
   where
     interpret :: Command -> BotM Text
     interpret = liftIO . Interpreter.run opts
+
+replyMarkdown :: Text -> BotM ()
+replyMarkdown s = reply (toReplyMessage s)
+  { replyMessageParseMode = Just ParseMode.Markdown }
+
+wrapCode :: Text -> Text
+wrapCode s = let q = "```" in q <> s <> q
 
 -- | Creates a new 'ClientEnv' using a given 'Config'.
 newClientEnv :: Config -> IO ClientEnv
