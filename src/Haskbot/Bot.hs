@@ -72,7 +72,8 @@ usage = Text.unlines
 -- | Processes incoming 'Telegram.Update's and turns them into 'Action's.
 updateToAction :: Model -> Telegram.Update -> Maybe Action
 updateToAction _ = parseUpdate $
-      Help <$ command "h"
+      Help <$ command "help"
+  <|> Hoogle <$> command "h"
   <|> Interpreter . TypeOf <$> command "t"
   <|> Interpreter . KindOf <$> command "k"
   <|> Interpreter . Eval   <$> command "e"

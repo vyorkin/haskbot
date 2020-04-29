@@ -1,4 +1,6 @@
--- | Idea of resource limiting is taken from @mueval@ package as is.
+-- | Idea of resource limiting is taken from @mueval@ package.
+-- See https://wiki.haskell.org/Resource_limits and
+-- https://wiki.haskell.org/Safely_running_untrusted_Haskell_code
 module Haskbot.Resources
   ( limitResources
   ) where
@@ -14,6 +16,17 @@ limitResources :: Bool -> IO ()
 limitResources rlimit = do
   nice 20 -- Set our process priority way down
   when rlimit $ mapM_ (uncurry setResourceLimit) limits
+
+limits :: [(Resource, ResourceLimits)]
+limits =
+  [ (ResourceStackSize, ResourceLimits stackSizeLimitSoft stackSizeLimitHard)
+  , (ResourceTotalMemory, ResourceLimits totalMemoryLimitSoft totalMemoryLimitHard)
+  , (ResourceOpenFiles, ResourceLimits openFilesLimitSoft openFilesLimitHard)
+  , (ResourceFileSize, ResourceLimits fileSizeLimitSoft fileSizeLimitHard)
+  , (ResourceDataSize, ResourceLimits dataSizeLimitSoft dataSizeLimitHard)
+  , (ResourceCoreFileSize, ResourceLimits coreSizeLimitSoft coreSizeLimitHard)
+  , (ResourceCPUTime, ResourceLimits cpuTimeLimitSoft cpuTimeLimitHard)
+  ]
 
 -- | Set all the available rlimits.
 -- These values have been determined through trial-and-error.
@@ -53,14 +66,3 @@ coreSizeLimitHard = zero
 
 -- Convenience
 zero = ResourceLimit 0
-
-limits :: [(Resource, ResourceLimits)]
-limits =
-  [ (ResourceStackSize, ResourceLimits stackSizeLimitSoft stackSizeLimitHard)
-  , (ResourceTotalMemory, ResourceLimits totalMemoryLimitSoft totalMemoryLimitHard)
-  , (ResourceOpenFiles, ResourceLimits openFilesLimitSoft openFilesLimitHard)
-  , (ResourceFileSize, ResourceLimits fileSizeLimitSoft fileSizeLimitHard)
-  , (ResourceDataSize, ResourceLimits dataSizeLimitSoft dataSizeLimitHard)
-  , (ResourceCoreFileSize, ResourceLimits coreSizeLimitSoft coreSizeLimitHard)
-  , (ResourceCPUTime, ResourceLimits cpuTimeLimitSoft cpuTimeLimitHard)
-  ]
