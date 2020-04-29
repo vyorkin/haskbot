@@ -32,8 +32,9 @@ data Model = Model
 
 -- | Actions bot can perform.
 data Action
-  = NoAction   -- ^ Perform no action.
-  | Eval Text -- ^ Reply some text.
+  = NoAction     -- ^ Perform no action.
+  | Eval Text    -- ^ Evalualte expression.
+  | TypeOf Text  -- ^ Get expresion type.
   deriving (Show)
 
 -- | Bot application.
@@ -48,14 +49,18 @@ bot = BotApp
 -- | Processes incoming 'Telegram.Update's and turns them into 'Action's.
 handleUpdate :: Model -> Telegram.Update -> Maybe Action
 handleUpdate _ = parseUpdate
-  (Eval <$> text)
+  (TypeOf <$> text)
 
 -- | How to handle 'Action's.
 handleAction :: Action -> Model -> Eff Action Model
 handleAction action model = case action of
   NoAction -> pure model
-  Eval msg -> model <# do
-    res <- liftIO $ Interpreter.run' defaultOptions msg
+  Eval expr -> model <# do
+    res <- liftIO $ Interpreter.eval defaultOptions expr
+    replyText res
+    pure NoAction
+  TypeOf expr -> model <# do
+    res <- liftIO $ Interpreter.typeOf defaultOptions expr
     replyText res
     pure NoAction
 

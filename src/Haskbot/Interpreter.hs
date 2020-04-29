@@ -1,7 +1,9 @@
 module Haskbot.Interpreter
   ( -- * Functions
-    run'
-  , run
+    eval
+  , eval'
+  , typeOf
+  , typeOf'
     -- * Re-exports
   , module Haskbot.Interpreter.Context
   , module Haskbot.Interpreter.Error
@@ -16,9 +18,9 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Control.Monad.Catch (MonadMask)
 
 import Language.Haskell.Interpreter
-  (eval, set, reset, setImportsQ, loadModules, liftIO,
+  (set, reset, setImportsQ, loadModules, liftIO,
    installedModulesInScope, languageExtensions, availableExtensions,
-   typeOf, setTopLevelModules, runInterpreter, interpret, infer,
+   setTopLevelModules, runInterpreter, interpret, infer,
    OptionVal(..), Interpreter, MonadInterpreter,
    InterpreterError(..), GhcError(..),
    Extension(UnknownExtension))
@@ -29,21 +31,38 @@ import Haskbot.Resources (limitResources)
 import Haskbot.Interpreter.Error (ppInterpreterError)
 import Haskbot.Interpreter.Options (Options(..), defaultOptions)
 
-run' :: Options -> Text -> IO Text
-run' options expr =
-  either ppInterpreterError Text.pack <$> run options expr
+setup :: MonadInterpreter m => Options -> m ()
+setup Options{..} = do
+  liftIO $ limitResources rLimits
+  setImports modules
+
+typeOf :: Options -> Text -> IO Text
+typeOf options expr =
+  either ppInterpreterError Text.pack <$> typeOf' options expr
+
+typeOf'
+  :: (MonadIO m, MonadMask m)
+  => Options
+  -> Text
+  -> m (Either InterpreterError String)
+typeOf' opts expr = runInterpreter do
+  setup opts
+  Hint.typeOf $ Text.unpack expr
+
+eval :: Options -> Text -> IO Text
+eval options expr =
+  either ppInterpreterError Text.pack <$> eval' options expr
+
+eval'
+  :: (MonadIO m, MonadMask m)
+  => Options
+  -> Text
+  -> m (Either InterpreterError String)
+eval' opts expr = runInterpreter do
+  setup opts
+  Hint.eval $ Text.unpack expr
 
 setImports :: MonadInterpreter m => Maybe [String] -> m ()
 setImports extra = do
   let unqualifiedModules = zip (defaultModules ++ fromMaybe [] extra) (repeat Nothing)
   setImportsQ (unqualifiedModules ++ defaultQualifiedModules)
-
-run
-  :: (MonadIO m, MonadMask m)
-  => Options
-  -> Text
-  -> m (Either InterpreterError String)
-run Options{..} expr = runInterpreter $ do
-  liftIO $ limitResources rLimits
-  setImports modules
-  eval $ Text.unpack expr
