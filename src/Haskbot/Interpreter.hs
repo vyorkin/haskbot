@@ -1,20 +1,19 @@
 module Haskbot.Interpreter
-  ( -- * Functions
-    eval
-  , eval'
-  , typeOf
-  , typeOf'
+  ( -- * Types
+    Command(..)
+    -- * Functions
+  , setup
+  , run
+  , run'
     -- * Re-exports
   , module Haskbot.Interpreter.Context
   , module Haskbot.Interpreter.Error
   , module Haskbot.Interpreter.Options
   ) where
 
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import qualified Data.Text as Text
-import Data.Typeable (Typeable)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (MonadIO)
 import Control.Monad.Catch (MonadMask)
 
 import Language.Haskell.Interpreter
@@ -27,42 +26,36 @@ import Language.Haskell.Interpreter
 import qualified Language.Haskell.Interpreter as Hint
 
 import Haskbot.Interpreter.Context (defaultModules, defaultQualifiedModules, defaultPackages)
-import Haskbot.Resources (limitResources)
 import Haskbot.Interpreter.Error (ppInterpreterError)
 import Haskbot.Interpreter.Options (Options(..), defaultOptions)
 
+-- | Interpreter commands.
+data Command
+  = Eval Text   -- ^ Evaluate expression.
+  | TypeOf Text -- ^ Get type of an expression.
+  | KindOf Text -- ^ Get expression kind.
+  deriving (Show, Read)
+
 setup :: MonadInterpreter m => Options -> m ()
 setup Options{..} = do
-  liftIO $ limitResources rLimits
   setImports modules
 
-typeOf :: Options -> Text -> IO Text
-typeOf options expr =
-  either ppInterpreterError Text.pack <$> typeOf' options expr
+run :: Options -> Command -> IO Text
+run opts cmd = either ppInterpreterError Text.pack <$> run' opts cmd
 
-typeOf'
+run'
   :: (MonadIO m, MonadMask m)
   => Options
-  -> Text
+  -> Command
   -> m (Either InterpreterError String)
-typeOf' opts expr = runInterpreter do
+run' opts cmd = runInterpreter do
   setup opts
-  Hint.typeOf $ Text.unpack expr
+  case cmd of
+    Eval s -> Hint.eval $ Text.unpack s
+    TypeOf s -> Hint.typeOf $ Text.unpack s
+    KindOf s -> Hint.kindOf $ Text.unpack s
 
-eval :: Options -> Text -> IO Text
-eval options expr =
-  either ppInterpreterError Text.pack <$> eval' options expr
-
-eval'
-  :: (MonadIO m, MonadMask m)
-  => Options
-  -> Text
-  -> m (Either InterpreterError String)
-eval' opts expr = runInterpreter do
-  setup opts
-  Hint.eval $ Text.unpack expr
-
-setImports :: MonadInterpreter m => Maybe [String] -> m ()
+setImports :: MonadInterpreter m => [String] -> m ()
 setImports extra = do
-  let unqualifiedModules = zip (defaultModules ++ fromMaybe [] extra) (repeat Nothing)
+  let unqualifiedModules = zip (defaultModules ++ extra) (repeat Nothing)
   setImportsQ (unqualifiedModules ++ defaultQualifiedModules)

@@ -3,66 +3,71 @@ module Haskbot.Bot
     Model(..)
   , Action(..)
     -- * Functions
-  , bot
-  , handleUpdate
-  , handleAction
+  , mkBot
+  , updateToAction
+  , mkActionHandler
   , run
   ) where
 
-import Control.Monad.IO.Class (MonadIO, liftIO)
-import Control.Monad.Catch (MonadMask)
 import Data.Text (Text)
-import qualified Data.Text as Text
+import Control.Monad.IO.Class (liftIO)
+import Control.Applicative ((<|>))
 import Network.HTTP.Client (newManager, noProxy, useProxy, managerSetProxy)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
 import Servant.Client (ClientEnv(..), mkClientEnv)
 import qualified Telegram.Bot.API as Telegram
 import Telegram.Bot.API (botBaseUrl)
-import Telegram.Bot.Simple (BotApp(..), Eff, startBot_, (<#), replyText)
+import Telegram.Bot.Simple (BotApp(..), Eff, BotM, startBot_, (<#), replyText)
 import Telegram.Bot.Simple.Debug (traceBotDefault)
-import Telegram.Bot.Simple.UpdateParser (parseUpdate, text)
+import Telegram.Bot.Simple.UpdateParser (parseUpdate, plainText, command, callbackQueryDataRead)
 
 import Haskbot.Config (Config(..))
-import Haskbot.Interpreter (defaultOptions)
+import Haskbot.Interpreter (Options(..), Command(..))
 import qualified Haskbot.Interpreter as Interpreter
 
 -- | Bot conversation state model.
-data Model = Model
-  deriving (Show)
+data Model = Model deriving (Show)
+
+emptyModel :: Model
+emptyModel = Model
 
 -- | Actions bot can perform.
 data Action
-  = NoAction     -- ^ Perform no action.
-  | Eval Text    -- ^ Evalualte expression.
-  | TypeOf Text  -- ^ Get expresion type.
-  deriving (Show)
+  -- | Perform no action.
+  = Done
+  -- | Run interpreter command.
+  | Interpreter Command
+  deriving (Show, Read)
 
--- | Bot application.
-bot :: BotApp Model Action
-bot = BotApp
-  { botInitialModel = Model
-  , botAction = flip handleUpdate
-  , botHandler = handleAction
+-- | Helper function for convenience.
+done :: Applicative f => f Action
+done = pure Done
+
+-- | Makes a bot application.
+mkBot :: Options -> BotApp Model Action
+mkBot opts = BotApp
+  { botInitialModel = emptyModel
+  , botAction = flip updateToAction
+  , botHandler = mkActionHandler opts
   , botJobs = []
   }
 
 -- | Processes incoming 'Telegram.Update's and turns them into 'Action's.
-handleUpdate :: Model -> Telegram.Update -> Maybe Action
-handleUpdate _ = parseUpdate
-  (TypeOf <$> text)
+updateToAction :: Model -> Telegram.Update -> Maybe Action
+updateToAction _ = parseUpdate $
+      Interpreter . TypeOf <$> command "t"
+  <|> Interpreter . KindOf <$> command "k"
+  <|> Interpreter . Eval   <$> plainText
+  <|> callbackQueryDataRead
 
--- | How to handle 'Action's.
-handleAction :: Action -> Model -> Eff Action Model
-handleAction action model = case action of
-  NoAction -> pure model
-  Eval expr -> model <# do
-    res <- liftIO $ Interpreter.eval defaultOptions expr
-    replyText res
-    pure NoAction
-  TypeOf expr -> model <# do
-    res <- liftIO $ Interpreter.typeOf defaultOptions expr
-    replyText res
-    pure NoAction
+-- | Creates a new 'Action' handler.
+mkActionHandler :: Options -> Action -> Model -> Eff Action Model
+mkActionHandler opts action model = case action of
+  Done -> pure model
+  Interpreter cmd -> model <# (interpret cmd >>= replyText >> done)
+  where
+    interpret :: Command -> BotM Text
+    interpret = liftIO . Interpreter.run opts
 
 -- | Creates a new 'ClientEnv' using a given 'Config'.
 newClientEnv :: Config -> IO ClientEnv
@@ -71,8 +76,9 @@ newClientEnv Config{..} = do
   let settings = managerSetProxy proxy tlsManagerSettings
   mkClientEnv <$> newManager settings <*> pure (botBaseUrl configBotToken)
 
--- | Run bot with a given 'Config'.
-run :: Config -> IO ()
-run config = do
-  env <- newClientEnv config
+-- | Run bot with a given 'Config' and 'Options'.
+run :: Config -> Options -> IO ()
+run cfg opts = do
+  env <- newClientEnv cfg
+  let bot = mkBot opts
   startBot_ (traceBotDefault bot) env
